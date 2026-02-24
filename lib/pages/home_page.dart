@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:weather/weather.dart';
 import 'package:weather_app/const.dart';
 import 'package:intl/intl.dart';
+import 'package:weather_app/services/weather_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,58 +13,46 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
-  final WeatherFactory _wf = WeatherFactory(OPENWEATHER_API_KEY, language: Language.PORTUGUESE_BRAZIL);
-  // Adicione isso abaixo do Weather Factory
+  final WeatherService _weatherService = WeatherService();
+ 
 final TextEditingController _searchController = TextEditingController();
-List<String> _favoritos = []; // Começa com algumas cidades
+List<String> _favoritos = []; 
 
-void _buscarNovaCidade(String nomeDaCidade) {
-  // 1. Avisa o Flutter para mostrar a bolinha de carregamento
+void _buscarNovaCidade(String nomeDaCidade) async { 
   setState(() {
     _weather = null; 
   });
 
-  // 2. Vai na API buscar a cidade digitada
-  _wf.currentWeatherByCityName(nomeDaCidade).then((w) {
+  Weather? resultado = await _weatherService.getCityWeather(nomeDaCidade);
+
+ 
+  if (resultado != null) {
+  
     setState(() {
-      _weather = w; // 3. Atualiza a tela com o clima novo
+      _weather = resultado; 
     });
-  }).catchError((e) {
-    // Se o usuário digitar uma cidade que não existe, mostramos um aviso!
+  } else {
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Não conseguimos encontrar a cidade: $nomeDaCidade"),
         backgroundColor: Colors.redAccent,
       ),
     );
-    // E voltamos para uma cidade padrão para não travar na tela de loading
+    
     _buscarNovaCidade("Rio de Janeiro"); 
-  });
-}
-
-void _searchWeather(String city) {
-  _wf.currentWeatherByCityName(city).then((w) {
-    setState(() {
-      _weather = w;
-    });
-  });
+  }
 }
 
   Weather? _weather;
 
-  @override
+ @override
 void initState() {
   super.initState();
   print("Iniciando busca de clima...");
   
-  _wf.currentWeatherByCityName("Rio de Janeiro").then((w) {
-    print("Dados recebidos: ${w.areaName}"); // Verifique se isso aparece
-    setState(() {
-      _weather = w;
-    });
-  }).catchError((e) {
-    print("ERRO NA API: $e"); // Isso vai te dizer se a API Key é inválida ou se não há internet
-  });
+  // O _buscarNovaCidade já faz o setState, o catchError e atualiza a tela!
+  _buscarNovaCidade("Rio de Janeiro"); 
 }
 
   @override
